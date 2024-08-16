@@ -16,23 +16,7 @@ import FilterDialog from "@/components/FilterDialog";
 import { FaRegTrashCan } from "react-icons/fa6";
 import { MdOutlineEdit } from "react-icons/md";
 import { CiFilter } from "react-icons/ci";
-
-// Debounce function
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+import useDebounce from "@/components/UseDebounce";
 
 const generateData = (numRows) => {
   const teams = ["Engineering", "Marketing", "Sales"];
@@ -66,24 +50,41 @@ const PeopleDirectory = () => {
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const data = generateData(50);
-    setTableData(data);
-  }, []);
-
   // Debounced search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Memoize filtered data
   const filteredData = useMemo(() => {
+    // Ensure debouncedSearchTerm is a string
+    const debouncedSearchTermStr = typeof debouncedSearchTerm === 'string' ? debouncedSearchTerm : '';
     return tableData.filter((user) => {
       const matchesSearch = user.name
         .toLowerCase()
-        .includes(debouncedSearchTerm.toLowerCase());
+        .includes(debouncedSearchTermStr.toLowerCase());
       const matchesFilter = filter ? user.team === filter : true;
       return matchesSearch && matchesFilter;
     });
   }, [tableData, debouncedSearchTerm, filter]);
+
+  const updateUrlParams = () => {
+    const urlQuery = new URLSearchParams();
+    urlQuery.set("query", searchTerm);
+    urlQuery.set("filter", filter);
+    window.history.pushState({}, "", `${window.location.pathname}?${urlQuery.toString()}`);
+  };
+
+  useEffect(() => {
+    const data = generateData(50);
+    setTableData(data);
+
+    const urlQuery = new URLSearchParams(window.location.search);
+    setSearchTerm(urlQuery.get("query") || "");
+    setFilter(urlQuery.get("filter") || "");
+  }, []);
+
+  useEffect(() => {
+    updateUrlParams();
+  }, [searchTerm, filter]);
 
   const columnHelper = createColumnHelper();
 
@@ -214,10 +215,6 @@ const PeopleDirectory = () => {
     setIsEditUserDialogOpen(true);
   };
 
-  const handleOpenAddMemberDialog = () => {
-    setIsAddMemberDialogOpen(true);
-  };
-
   const handleCloseEditUserDialog = () => {
     setIsEditUserDialogOpen(false);
     setSelectedUser(null);
@@ -228,6 +225,10 @@ const PeopleDirectory = () => {
       prevData.map((user) => (user.id === updatedUser.id ? updatedUser : user))
     );
     handleCloseEditUserDialog();
+  };
+
+  const handleOpenAddMemberDialog = () => {
+    setIsAddMemberDialogOpen(true);
   };
 
   const handleCloseAddMemberDialog = () => {

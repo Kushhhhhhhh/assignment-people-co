@@ -1,18 +1,25 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  status: z.enum(['Active', 'Inactive']),
+  role: z.string().min(1, 'Role is required'),
+  email: z.string().email('Invalid email format'),
+  team: z.string().min(1, 'Team is required'),
+});
 
 const EditUserDialog = ({ isOpen, onClose, user, onSave }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    status: 'Active', 
-    role: '',
-    email: '',
-    team: '',
+  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
   });
 
   useEffect(() => {
     if (isOpen && user) {
-      setFormData({
+      reset({
         name: user.name,
         status: user.status,
         role: user.role,
@@ -20,17 +27,12 @@ const EditUserDialog = ({ isOpen, onClose, user, onSave }) => {
         team: user.team,
       });
     } else {
-      setFormData({ name: '', status: 'Active', role: '', email: '', team: '' }); 
+      reset({ name: '', status: 'Active', role: '', email: '', team: '' });
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, reset]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({ ...prevData, [name]: value }));
-  };
-
-  const handleSave = () => {
-    onSave({ ...user, ...formData });
+  const onSubmit = (data) => {
+    onSave({ ...user, ...data });
     onClose();
   };
 
@@ -39,24 +41,20 @@ const EditUserDialog = ({ isOpen, onClose, user, onSave }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
         <div className="bg-white p-4 rounded-lg w-96 shadow-lg">
           <h2 className="text-xl font-bold mb-4">Edit User</h2>
-          <form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-4">
               <label className="block text-gray-700">Name</label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                required
+                {...register('name')}
+                className={`border border-gray-300 rounded-lg px-4 py-2 w-full ${errors.name ? 'border-red-500' : ''}`}
               />
+              {errors.name && <span className="text-red-500 text-sm">{errors.name.message}</span>}
             </div>
             <div className="mb-4">
               <label className="block text-gray-700">Status</label>
               <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
+                {...register('status')}
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full"
               >
                 <option value="Active">Active</option>
@@ -67,39 +65,32 @@ const EditUserDialog = ({ isOpen, onClose, user, onSave }) => {
               <label className="block text-gray-700">Role</label>
               <input
                 type="text"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                required
+                {...register('role')}
+                className={`border border-gray-300 rounded-lg px-4 py-2 w-full ${errors.role ? 'border-red-500' : ''}`}
               />
+              {errors.role && <span className="text-red-500 text-sm">{errors.role.message}</span>}
             </div>
             <div className="mb-4">
               <label className="block text-gray-700">Email</label>
               <input
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                required
+                {...register('email')}
+                className={`border border-gray-300 rounded-lg px-4 py-2 w-full ${errors.email ? 'border-red-500' : ''}`}
               />
+              {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
             </div>
             <div className="mb-4">
               <label className="block text-gray-700">Team</label>
               <input
                 type="text"
-                name="team"
-                value={formData.team}
-                onChange={handleChange}
-                className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                required
+                {...register('team')}
+                className={`border border-gray-300 rounded-lg px-4 py-2 w-full ${errors.team ? 'border-red-500' : ''}`}
               />
+              {errors.team && <span className="text-red-500 text-sm">{errors.team.message}</span>}
             </div>
             <div className="flex justify-end space-x-2">
               <button
-                type="button"
-                onClick={handleSave}
+                type="submit"
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               >
                 Save
